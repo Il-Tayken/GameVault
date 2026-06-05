@@ -1,0 +1,32 @@
+CREATE TABLE GameEntity (
+    id INTEGER NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL,
+    backgroundImage TEXT,
+    rating REAL NOT NULL DEFAULT 0.0,
+    ratingTop INTEGER NOT NULL DEFAULT 0,
+    released TEXT,
+    metacritic INTEGER,
+    playtime INTEGER NOT NULL DEFAULT 0,
+    platforms TEXT NOT NULL DEFAULT '',
+    genres TEXT NOT NULL DEFAULT '',
+    shortScreenshots TEXT NOT NULL DEFAULT '',
+    isFavorite INTEGER NOT NULL DEFAULT 0
+);
+
+selectAll:
+SELECT * FROM GameEntity ORDER BY isFavorite DESC, rating DESC;
+
+selectByPlatform:
+SELECT * FROM GameEntity WHERE platforms LIKE '%' || :platform || '%' ORDER BY isFavorite DESC, rating DESC;
+
+selectById:
+SELECT * FROM GameEntity WHERE id = :id;
+
+insert:
+INSERT OR REPLACE INTO GameEntity VALUES ?;
+
+updateFavorite:
+UPDATE GameEntity SET isFavorite = :isFavorite WHERE id = :id;
+
+deleteAll:
+DELETE FROM GameEntity;

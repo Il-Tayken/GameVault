@@ -1,0 +1,21 @@
+# Build outputs
+build/
+.gradle/
+*.class
+*.dex
+
+# Android Studio
+.idea/
+*.iml
+*.iws
+*.ipr
+local.properties
+.DS_Store
+
+# APK files
+*.apk
+*.aab
+
+# Generated
+gen/
+out/
