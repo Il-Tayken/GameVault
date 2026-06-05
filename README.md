@@ -1,106 +1,266 @@
 # 🎮 GameVault
 
-A modern Android app for browsing and discovering video games, built with a Steam-inspired dark UI.
+> Мобильное Android-приложение для поиска, изучения и сохранения игр из каталога RAWG.io
 
 ---
 
-## 📱 Screenshots
+## 📱 Скриншоты экранов
 
-| Game List | Platform Filter | Game Detail |
-|-----------|----------------|-------------|
-| Dark Steam-style list with ratings | Filter by PC, PS5, Xbox, Mobile | Hero image + stats + description |
-
----
-
-## ✨ Features
-
-- **Browse games** — scrollable list of top-rated games powered by the RAWG API
-- **Filter by platform** — quickly filter games by PC, PlayStation 5, Xbox, or Mobile
-- **Game detail** — full page with hero image, rating, Metacritic score, playtime, genres, description, developers, and publishers
-- **Favorites** — mark any game as favourite; favourited games float to the top of the list
-- **Offline support** — all data is cached in a local SQLDelight database
+| Авторизация | Список игр | Детали | Обзор | Настройки |
+|:-----------:|:----------:|:------:|:-----:|:---------:|
+| Вход / Регистрация / Гость | Steam-стиль, фильтры | Герой-изображение, статы | 8 секций | Все переключатели |
 
 ---
 
-## 🏗️ Architecture
+## ✨ Функционал
 
-The project follows **Clean Architecture** with **MVVM** and is split into multiple Gradle modules:
+### 🔐 Авторизация
+- Вход по email и паролю
+- Регистрация с именем пользователя
+- Вход как гость (без регистрации)
+- Валидация полей с сообщениями об ошибках
+- Кнопка «Забыли пароль?»
+
+---
+
+### 🎮 Список игр
+- **120 игр** загружается при запуске (3 страницы × 40)
+- Два режима отображения карточек:
+  - **Обычный** — большая карточка с изображением 185dp, жанры, платформы, рейтинг
+  - **Компактный** — горизонтальная карточка 68dp для быстрого скролла
+- Переключение вида кнопкой в топбаре или тумблером в боковом меню
+- Избранные игры всегда отображаются первыми в списке
+- Значок Metacritic с цветовой индикацией (зелёный / жёлтый / красный)
+
+#### 🔍 Поиск
+- Поиск в реальном времени с debounce 300мс
+- Поиск по названию и жанру
+- Кнопка закрытия поиска
+
+#### 🏷 Фильтр по платформам
+- Все / PC / PS5 / PS4 / Xbox One / Xbox Series / Мобильные / Nintendo
+- Горизонтальный скролл чипов под топбаром
+- При смене платформы список перезагружается из сети
+
+#### 🎯 Фильтр по жанрам
+- Жанры собираются автоматически из загруженных игр
+- Горизонтальный скролл под фильтром платформ
+- Работает совместно с фильтром платформ
+
+#### ↕️ Сортировка
+**Общая:**
+- По рейтингу ↓ / ↑
+- По названию А–Я
+- По дате выхода (новые первыми)
+- По Metacritic
+- По времени игры
+
+**По магазину:**
+- 🖥 Steam — PC игры по рейтингу
+- ⚡ Epic Games — PC игры по Metacritic
+- 🎮 PlayStation — PS4/PS5 игры по рейтингу
+- 🟢 Xbox / Game Pass — Xbox игры по рейтингу
+
+При активном фильтре магазина показывается синий баннер с кнопкой сброса ✕
+
+#### ⭐ Избранное
+- Добавление/удаление нажатием ♡ на карточке
+- Раздел «Избранное» в боковом меню показывает только избранные игры
+- Избранные сохраняются в локальной БД и не удаляются при очистке кеша
+- При добавлении в избранное отправляется push-уведомление (если включено)
+
+---
+
+### 🔍 Обзор (Discover)
+8 секций с горизонтальным скроллом, загружаются параллельно:
+1. 🆕 Новое в Steam & Epic (PC) — последние 6 месяцев, сортировка по дате
+2. 🔥 Популярное — высокий рейтинг, много добавлений
+3. 📅 Свежие релизы — вышедшие за последние 3 месяца
+4. 🗓 Скоро выйдет — ближайшие 6 месяцев
+5. 🖥 Топ в Steam — PC + Steam магазин
+6. ⚡ Топ в Epic Games — PC + Epic магазин
+7. 🎮 Топ на PlayStation — PS4/PS5
+8. 🟢 Топ Xbox / Game Pass — Xbox One / Series
+
+Каждая карточка показывает: обложку, название, жанр, рейтинг, Metacritic, дату выхода, бейдж «NEW» для игр 2024+.
+
+Кнопка обновления в топбаре перезагружает все секции.
+
+---
+
+### 📖 Детали игры
+- Большое героическое изображение (280dp) с градиентом
+- Название, кнопка добавления в избранное
+- Чипы жанров
+- Статистическая карточка: Рейтинг / Metacritic / Время игры / Год выхода
+- Описание игры (до 600 символов)
+- Списки: Платформы / Разработчики / Издатели
+- Кнопка «Назад»
+
+---
+
+### ⚙️ Настройки
+
+#### Язык
+Выбор из 6 языков, применяется ко всему интерфейсу **немедленно** без перезапуска:
+- 🇷🇺 Русский
+- 🇬🇧 English
+- 🇪🇸 Español
+- 🇩🇪 Deutsch
+- 🇫🇷 Français
+- 🇨🇳 中文
+
+#### Отображение
+| Переключатель | Действие |
+|---|---|
+| Компактные карточки | Меняет вид карточек на компактный (68dp) |
+| Показывать рейтинг | Скрывает/показывает ⭐ на карточках |
+| Показывать Metacritic | Скрывает/показывает значок MC на карточках |
+
+#### Контент
+| Переключатель | Действие |
+|---|---|
+| Фильтр 18+ | Скрывает игры с ключевыми словами взрослого контента в названии и жанрах |
+
+#### Приложение
+| Переключатель | Действие |
+|---|---|
+| Уведомления | Запрашивает разрешение POST_NOTIFICATIONS (Android 13+), отправляет уведомление при добавлении игры в избранное |
+| Авто-обновление | При включении — сразу обновляет список; при запуске приложения тоже обновляет |
+| Кеширование | При выключении очищает старые игры перед загрузкой новых |
+
+#### Данные
+- Показывает количество игр в кеше
+- **Очистить кеш** — удаляет все игры из БД, кроме избранных; запускает обновление если включено авто-обновление
+- Источник данных: RAWG.io
+- База данных: SQLDelight
+
+#### Применение настроек
+- При изменении любого переключателя появляется кнопка **«Применить»** в топбаре и внизу страницы
+- Синий баннер сигнализирует о несохранённых изменениях
+- Выход из настроек только по стрелке «Назад» — настройки **не применяются автоматически**
+
+---
+
+## 🏗 Архитектура
 
 ```
 GameVault/
-├── app/                        # Entry point, navigation, theme
+├── app/                    ← MainActivity, NavHost, Theme, Application
 ├── core/
-│   ├── common/                 # Shared utilities (Resource wrapper)
-│   ├── database/               # SQLDelight DB + Hilt module
-│   └── network/                # Retrofit + RAWG API service + Hilt module
+│   ├── common/             ← AppPrefs, AppStrings (6 языков), Resource<T>
+│   ├── database/           ← SQLDelight схема, DatabaseModule
+│   └── network/            ← RawgApiService (9 методов), NetworkModule, DTOs
 └── feature/
-    ├── gamelist/               # Game list screen (domain / data / presentation)
-    └── gamedetail/             # Game detail screen (domain / data / presentation)
+    ├── auth/               ← Экран входа/регистрации
+    ├── gamelist/           ← Список игр, поиск, фильтры, избранное
+    ├── gamedetail/         ← Детальная страница игры
+    ├── discover/           ← 8 секций новинок и топов
+    └── settings/           ← Настройки с применением изменений
 ```
 
-Each feature module is structured by layer:
-
-- **domain** — models, repository interfaces, use cases (pure Kotlin, no Android deps)
-- **data** — repository implementations, mappers (network ↔ entity ↔ domain)
-- **presentation** — ViewModel + Compose UI
-
----
-
-## 🛠️ Tech Stack
-
-| Layer | Library |
-|-------|---------|
-| UI | Jetpack Compose + Material 3 |
-| Navigation | Navigation Compose |
-| State | ViewModel + StateFlow |
-| DI | Hilt |
-| Network | Retrofit + OkHttp + kotlinx.serialization |
-| Database | SQLDelight |
-| Image loading | Coil |
-| Language | Kotlin 2.0 |
+**Паттерн:** Clean Architecture + MVVM
+- **UI:** Jetpack Compose + Material3
+- **DI:** Hilt 2.52
+- **БД:** SQLDelight 2.0.2
+- **Сеть:** Retrofit 2.11 + OkHttp + kotlinx.serialization
+- **Изображения:** Coil 2.7
+- **Навигация:** Navigation Compose 2.8.2
+- **Async:** Kotlin Coroutines + Flow
 
 ---
 
-## 🚀 Getting Started
+## 🗄 База данных
 
-### 1. Get a free RAWG API key
+SQLDelight таблица `GameEntity`:
 
-Register at [rawg.io/apidocs](https://rawg.io/apidocs) and copy your key (free tier: 20,000 requests/month).
-
-### 2. Set your API key
-
-Open `core/network/src/main/java/com/gamevault/network/api/RawgApiService.kt` and replace:
-
-```kotlin
-const val API_KEY = "YOUR_RAWG_API_KEY"
-```
-
-with your actual key.
-
-### 3. Build & run
-
-```bash
-./gradlew assembleDebug
-```
-
-Or open the project in **Android Studio Hedgehog** (or newer) and press Run.
+| Поле | Тип | Описание |
+|---|---|---|
+| id | INTEGER PK | ID игры RAWG |
+| name | TEXT | Название |
+| backgroundImage | TEXT? | URL обложки |
+| rating | REAL | Рейтинг 0–5 |
+| ratingTop | INTEGER | Максимальный рейтинг |
+| released | TEXT? | Дата выхода |
+| metacritic | INTEGER? | Оценка Metacritic |
+| playtime | INTEGER | Среднее время игры (ч) |
+| platforms | TEXT | Платформы через запятую |
+| genres | TEXT | Жанры через запятую |
+| shortScreenshots | TEXT | URL скриншотов |
+| isFavorite | INTEGER | 0 / 1 |
 
 ---
 
-## 📦 Download
+## 🌐 API
 
-See the [Releases](../../releases) page to download the latest APK.
+**RAWG.io** — база данных более 900 000 игр.
+
+| Метод | Эндпоинт | Описание |
+|---|---|---|
+| `getGames` | `GET /games` | Список игр с пагинацией |
+| `getPopular` | `GET /games` | Популярные (Metacritic 80+) |
+| `getNewReleases` | `GET /games` | Новые релизы |
+| `getUpcoming` | `GET /games` | Предстоящие релизы |
+| `getTopByPlatform` | `GET /games` | Топ по платформе |
+| `getNewOnPC` | `GET /games` | Новинки Steam+Epic |
+| `getTopSteam` | `GET /games` | Топ Steam |
+| `getTopEpic` | `GET /games` | Топ Epic Games |
+| `getGameDetail` | `GET /games/{id}` | Детали игры |
 
 ---
 
-## 📋 Requirements
+## 🚀 Установка и запуск
 
-- Android 7.0+ (API 24)
-- Android Studio Hedgehog or newer
+### Требования
+- Android Studio Hedgehog или новее
 - JDK 17
+- Android SDK 35
+- Минимальная версия Android: 7.0 (API 24)
+
+### Шаги
+```bash
+# 1. Клонируй репозиторий
+git clone https://github.com/твой-ник/GameVault.git
+
+# 2. Открой в Android Studio
+# File → Open → выбери папку GameVault
+
+# 3. Дождись Gradle sync
+
+# 4. Запусти на устройстве или эмуляторе
+# Run → Run 'app'
+```
+
+### API ключ
+Ключ RAWG уже встроен в `RawgApiService.kt`:
+```kotlin
+const val API_KEY = "b30e7b08165a4f7c8f838bbc6740d585"
+```
 
 ---
 
-## 📄 License
+## 📦 Версии зависимостей
 
-MIT
+| Библиотека | Версия |
+|---|---|
+| Kotlin | 2.0.21 |
+| AGP | 8.5.2 |
+| Compose BOM | 2024.10.00 |
+| Hilt | 2.52 |
+| SQLDelight | 2.0.2 |
+| Retrofit | 2.11.0 |
+| OkHttp | 4.12.0 |
+| Coil | 2.7.0 |
+| Navigation Compose | 2.8.2 |
+| kotlinx.serialization | 1.7.3 |
+| Coroutines | 1.9.0 |
+
+---
+
+## 📄 Лицензия
+
+MIT License — свободное использование и модификация.
+
+---
+
+> Разработано с ❤️ на Kotlin + Jetpack Compose
