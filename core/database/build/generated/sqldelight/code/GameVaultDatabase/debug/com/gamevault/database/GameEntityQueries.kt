@@ -26,9 +26,11 @@ public class GameEntityQueries(
     genres: String,
     shortScreenshots: String,
     isFavorite: Long,
+    storeIds: String,
+    source: String,
   ) -> T): Query<T> = Query(-2_011_533_346, arrayOf("GameEntity"), driver, "GameEntity.sq",
       "selectAll",
-      "SELECT GameEntity.id, GameEntity.name, GameEntity.backgroundImage, GameEntity.rating, GameEntity.ratingTop, GameEntity.released, GameEntity.metacritic, GameEntity.playtime, GameEntity.platforms, GameEntity.genres, GameEntity.shortScreenshots, GameEntity.isFavorite FROM GameEntity ORDER BY isFavorite DESC, rating DESC") {
+      "SELECT GameEntity.id, GameEntity.name, GameEntity.backgroundImage, GameEntity.rating, GameEntity.ratingTop, GameEntity.released, GameEntity.metacritic, GameEntity.playtime, GameEntity.platforms, GameEntity.genres, GameEntity.shortScreenshots, GameEntity.isFavorite, GameEntity.storeIds, GameEntity.source FROM GameEntity ORDER BY isFavorite DESC, rating DESC") {
       cursor ->
     mapper(
       cursor.getLong(0)!!,
@@ -42,12 +44,15 @@ public class GameEntityQueries(
       cursor.getString(8)!!,
       cursor.getString(9)!!,
       cursor.getString(10)!!,
-      cursor.getLong(11)!!
+      cursor.getLong(11)!!,
+      cursor.getString(12)!!,
+      cursor.getString(13)!!
     )
   }
 
   public fun selectAll(): Query<GameEntity> = selectAll { id, name, backgroundImage, rating,
-      ratingTop, released, metacritic, playtime, platforms, genres, shortScreenshots, isFavorite ->
+      ratingTop, released, metacritic, playtime, platforms, genres, shortScreenshots, isFavorite,
+      storeIds, source ->
     GameEntity(
       id,
       name,
@@ -60,7 +65,9 @@ public class GameEntityQueries(
       platforms,
       genres,
       shortScreenshots,
-      isFavorite
+      isFavorite,
+      storeIds,
+      source
     )
   }
 
@@ -77,6 +84,8 @@ public class GameEntityQueries(
     genres: String,
     shortScreenshots: String,
     isFavorite: Long,
+    storeIds: String,
+    source: String,
   ) -> T): Query<T> = SelectByPlatformQuery(platform) { cursor ->
     mapper(
       cursor.getLong(0)!!,
@@ -90,13 +99,15 @@ public class GameEntityQueries(
       cursor.getString(8)!!,
       cursor.getString(9)!!,
       cursor.getString(10)!!,
-      cursor.getLong(11)!!
+      cursor.getLong(11)!!,
+      cursor.getString(12)!!,
+      cursor.getString(13)!!
     )
   }
 
   public fun selectByPlatform(platform: String): Query<GameEntity> = selectByPlatform(platform) {
       id, name, backgroundImage, rating, ratingTop, released, metacritic, playtime, platforms,
-      genres, shortScreenshots, isFavorite ->
+      genres, shortScreenshots, isFavorite, storeIds, source ->
     GameEntity(
       id,
       name,
@@ -109,7 +120,119 @@ public class GameEntityQueries(
       platforms,
       genres,
       shortScreenshots,
-      isFavorite
+      isFavorite,
+      storeIds,
+      source
+    )
+  }
+
+  public fun <T : Any> selectByStore(storeId: String, mapper: (
+    id: Long,
+    name: String,
+    backgroundImage: String?,
+    rating: Double,
+    ratingTop: Long,
+    released: String?,
+    metacritic: Long?,
+    playtime: Long,
+    platforms: String,
+    genres: String,
+    shortScreenshots: String,
+    isFavorite: Long,
+    storeIds: String,
+    source: String,
+  ) -> T): Query<T> = SelectByStoreQuery(storeId) { cursor ->
+    mapper(
+      cursor.getLong(0)!!,
+      cursor.getString(1)!!,
+      cursor.getString(2),
+      cursor.getDouble(3)!!,
+      cursor.getLong(4)!!,
+      cursor.getString(5),
+      cursor.getLong(6),
+      cursor.getLong(7)!!,
+      cursor.getString(8)!!,
+      cursor.getString(9)!!,
+      cursor.getString(10)!!,
+      cursor.getLong(11)!!,
+      cursor.getString(12)!!,
+      cursor.getString(13)!!
+    )
+  }
+
+  public fun selectByStore(storeId: String): Query<GameEntity> = selectByStore(storeId) { id, name,
+      backgroundImage, rating, ratingTop, released, metacritic, playtime, platforms, genres,
+      shortScreenshots, isFavorite, storeIds, source ->
+    GameEntity(
+      id,
+      name,
+      backgroundImage,
+      rating,
+      ratingTop,
+      released,
+      metacritic,
+      playtime,
+      platforms,
+      genres,
+      shortScreenshots,
+      isFavorite,
+      storeIds,
+      source
+    )
+  }
+
+  public fun <T : Any> selectBySource(source: String, mapper: (
+    id: Long,
+    name: String,
+    backgroundImage: String?,
+    rating: Double,
+    ratingTop: Long,
+    released: String?,
+    metacritic: Long?,
+    playtime: Long,
+    platforms: String,
+    genres: String,
+    shortScreenshots: String,
+    isFavorite: Long,
+    storeIds: String,
+    source: String,
+  ) -> T): Query<T> = SelectBySourceQuery(source) { cursor ->
+    mapper(
+      cursor.getLong(0)!!,
+      cursor.getString(1)!!,
+      cursor.getString(2),
+      cursor.getDouble(3)!!,
+      cursor.getLong(4)!!,
+      cursor.getString(5),
+      cursor.getLong(6),
+      cursor.getLong(7)!!,
+      cursor.getString(8)!!,
+      cursor.getString(9)!!,
+      cursor.getString(10)!!,
+      cursor.getLong(11)!!,
+      cursor.getString(12)!!,
+      cursor.getString(13)!!
+    )
+  }
+
+  public fun selectBySource(source: String): Query<GameEntity> = selectBySource(source) { id, name,
+      backgroundImage, rating, ratingTop, released, metacritic, playtime, platforms, genres,
+      shortScreenshots, isFavorite, storeIds, source_ ->
+    GameEntity(
+      id,
+      name,
+      backgroundImage,
+      rating,
+      ratingTop,
+      released,
+      metacritic,
+      playtime,
+      platforms,
+      genres,
+      shortScreenshots,
+      isFavorite,
+      storeIds,
+      source_
     )
   }
 
@@ -126,6 +249,8 @@ public class GameEntityQueries(
     genres: String,
     shortScreenshots: String,
     isFavorite: Long,
+    storeIds: String,
+    source: String,
   ) -> T): Query<T> = SelectByIdQuery(id) { cursor ->
     mapper(
       cursor.getLong(0)!!,
@@ -139,13 +264,15 @@ public class GameEntityQueries(
       cursor.getString(8)!!,
       cursor.getString(9)!!,
       cursor.getString(10)!!,
-      cursor.getLong(11)!!
+      cursor.getLong(11)!!,
+      cursor.getString(12)!!,
+      cursor.getString(13)!!
     )
   }
 
   public fun selectById(id: Long): Query<GameEntity> = selectById(id) { id_, name, backgroundImage,
       rating, ratingTop, released, metacritic, playtime, platforms, genres, shortScreenshots,
-      isFavorite ->
+      isFavorite, storeIds, source ->
     GameEntity(
       id_,
       name,
@@ -158,14 +285,74 @@ public class GameEntityQueries(
       platforms,
       genres,
       shortScreenshots,
-      isFavorite
+      isFavorite,
+      storeIds,
+      source
+    )
+  }
+
+  public fun <T : Any> selectFavorites(mapper: (
+    id: Long,
+    name: String,
+    backgroundImage: String?,
+    rating: Double,
+    ratingTop: Long,
+    released: String?,
+    metacritic: Long?,
+    playtime: Long,
+    platforms: String,
+    genres: String,
+    shortScreenshots: String,
+    isFavorite: Long,
+    storeIds: String,
+    source: String,
+  ) -> T): Query<T> = Query(-2_089_025_836, arrayOf("GameEntity"), driver, "GameEntity.sq",
+      "selectFavorites",
+      "SELECT GameEntity.id, GameEntity.name, GameEntity.backgroundImage, GameEntity.rating, GameEntity.ratingTop, GameEntity.released, GameEntity.metacritic, GameEntity.playtime, GameEntity.platforms, GameEntity.genres, GameEntity.shortScreenshots, GameEntity.isFavorite, GameEntity.storeIds, GameEntity.source FROM GameEntity WHERE isFavorite = 1 ORDER BY rating DESC") {
+      cursor ->
+    mapper(
+      cursor.getLong(0)!!,
+      cursor.getString(1)!!,
+      cursor.getString(2),
+      cursor.getDouble(3)!!,
+      cursor.getLong(4)!!,
+      cursor.getString(5),
+      cursor.getLong(6),
+      cursor.getLong(7)!!,
+      cursor.getString(8)!!,
+      cursor.getString(9)!!,
+      cursor.getString(10)!!,
+      cursor.getLong(11)!!,
+      cursor.getString(12)!!,
+      cursor.getString(13)!!
+    )
+  }
+
+  public fun selectFavorites(): Query<GameEntity> = selectFavorites { id, name, backgroundImage,
+      rating, ratingTop, released, metacritic, playtime, platforms, genres, shortScreenshots,
+      isFavorite, storeIds, source ->
+    GameEntity(
+      id,
+      name,
+      backgroundImage,
+      rating,
+      ratingTop,
+      released,
+      metacritic,
+      playtime,
+      platforms,
+      genres,
+      shortScreenshots,
+      isFavorite,
+      storeIds,
+      source
     )
   }
 
   public fun insert(GameEntity: GameEntity) {
     driver.execute(443_876_480,
-        """INSERT OR REPLACE INTO GameEntity (id, name, backgroundImage, rating, ratingTop, released, metacritic, playtime, platforms, genres, shortScreenshots, isFavorite) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-        12) {
+        """INSERT OR REPLACE INTO GameEntity (id, name, backgroundImage, rating, ratingTop, released, metacritic, playtime, platforms, genres, shortScreenshots, isFavorite, storeIds, source) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        14) {
           bindLong(0, GameEntity.id)
           bindString(1, GameEntity.name)
           bindString(2, GameEntity.backgroundImage)
@@ -178,6 +365,8 @@ public class GameEntityQueries(
           bindString(9, GameEntity.genres)
           bindString(10, GameEntity.shortScreenshots)
           bindLong(11, GameEntity.isFavorite)
+          bindString(12, GameEntity.storeIds)
+          bindString(13, GameEntity.source)
         }
     notifyQueries(443_876_480) { emit ->
       emit("GameEntity")
@@ -190,6 +379,16 @@ public class GameEntityQueries(
           bindLong(1, id)
         }
     notifyQueries(820_320_332) { emit ->
+      emit("GameEntity")
+    }
+  }
+
+  public fun deleteNonFavoritesBySource(source: String) {
+    driver.execute(27_640_334, """DELETE FROM GameEntity WHERE source = ? AND isFavorite = 0""", 1)
+        {
+          bindString(0, source)
+        }
+    notifyQueries(27_640_334) { emit ->
       emit("GameEntity")
     }
   }
@@ -215,12 +414,56 @@ public class GameEntityQueries(
 
     override fun <R> execute(mapper: (SqlCursor) -> QueryResult<R>): QueryResult<R> =
         driver.executeQuery(-625_242_867,
-        """SELECT GameEntity.id, GameEntity.name, GameEntity.backgroundImage, GameEntity.rating, GameEntity.ratingTop, GameEntity.released, GameEntity.metacritic, GameEntity.playtime, GameEntity.platforms, GameEntity.genres, GameEntity.shortScreenshots, GameEntity.isFavorite FROM GameEntity WHERE platforms LIKE '%' || ? || '%' ORDER BY isFavorite DESC, rating DESC""",
+        """SELECT GameEntity.id, GameEntity.name, GameEntity.backgroundImage, GameEntity.rating, GameEntity.ratingTop, GameEntity.released, GameEntity.metacritic, GameEntity.playtime, GameEntity.platforms, GameEntity.genres, GameEntity.shortScreenshots, GameEntity.isFavorite, GameEntity.storeIds, GameEntity.source FROM GameEntity WHERE platforms LIKE '%' || ? || '%' ORDER BY isFavorite DESC, rating DESC""",
         mapper, 1) {
       bindString(0, platform)
     }
 
     override fun toString(): String = "GameEntity.sq:selectByPlatform"
+  }
+
+  private inner class SelectByStoreQuery<out T : Any>(
+    public val storeId: String,
+    mapper: (SqlCursor) -> T,
+  ) : Query<T>(mapper) {
+    override fun addListener(listener: Query.Listener) {
+      driver.addListener("GameEntity", listener = listener)
+    }
+
+    override fun removeListener(listener: Query.Listener) {
+      driver.removeListener("GameEntity", listener = listener)
+    }
+
+    override fun <R> execute(mapper: (SqlCursor) -> QueryResult<R>): QueryResult<R> =
+        driver.executeQuery(1_567_533_703,
+        """SELECT GameEntity.id, GameEntity.name, GameEntity.backgroundImage, GameEntity.rating, GameEntity.ratingTop, GameEntity.released, GameEntity.metacritic, GameEntity.playtime, GameEntity.platforms, GameEntity.genres, GameEntity.shortScreenshots, GameEntity.isFavorite, GameEntity.storeIds, GameEntity.source FROM GameEntity WHERE storeIds LIKE '%' || ? || '%' ORDER BY isFavorite DESC, rating DESC""",
+        mapper, 1) {
+      bindString(0, storeId)
+    }
+
+    override fun toString(): String = "GameEntity.sq:selectByStore"
+  }
+
+  private inner class SelectBySourceQuery<out T : Any>(
+    public val source: String,
+    mapper: (SqlCursor) -> T,
+  ) : Query<T>(mapper) {
+    override fun addListener(listener: Query.Listener) {
+      driver.addListener("GameEntity", listener = listener)
+    }
+
+    override fun removeListener(listener: Query.Listener) {
+      driver.removeListener("GameEntity", listener = listener)
+    }
+
+    override fun <R> execute(mapper: (SqlCursor) -> QueryResult<R>): QueryResult<R> =
+        driver.executeQuery(1_344_465_717,
+        """SELECT GameEntity.id, GameEntity.name, GameEntity.backgroundImage, GameEntity.rating, GameEntity.ratingTop, GameEntity.released, GameEntity.metacritic, GameEntity.playtime, GameEntity.platforms, GameEntity.genres, GameEntity.shortScreenshots, GameEntity.isFavorite, GameEntity.storeIds, GameEntity.source FROM GameEntity WHERE source = ? ORDER BY isFavorite DESC, rating DESC""",
+        mapper, 1) {
+      bindString(0, source)
+    }
+
+    override fun toString(): String = "GameEntity.sq:selectBySource"
   }
 
   private inner class SelectByIdQuery<out T : Any>(
@@ -237,7 +480,7 @@ public class GameEntityQueries(
 
     override fun <R> execute(mapper: (SqlCursor) -> QueryResult<R>): QueryResult<R> =
         driver.executeQuery(2_067_017_013,
-        """SELECT GameEntity.id, GameEntity.name, GameEntity.backgroundImage, GameEntity.rating, GameEntity.ratingTop, GameEntity.released, GameEntity.metacritic, GameEntity.playtime, GameEntity.platforms, GameEntity.genres, GameEntity.shortScreenshots, GameEntity.isFavorite FROM GameEntity WHERE id = ?""",
+        """SELECT GameEntity.id, GameEntity.name, GameEntity.backgroundImage, GameEntity.rating, GameEntity.ratingTop, GameEntity.released, GameEntity.metacritic, GameEntity.playtime, GameEntity.platforms, GameEntity.genres, GameEntity.shortScreenshots, GameEntity.isFavorite, GameEntity.storeIds, GameEntity.source FROM GameEntity WHERE id = ?""",
         mapper, 1) {
       bindLong(0, id)
     }

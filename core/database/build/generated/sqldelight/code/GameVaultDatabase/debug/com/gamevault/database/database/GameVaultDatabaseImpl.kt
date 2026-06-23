@@ -24,7 +24,7 @@ private class GameVaultDatabaseImpl(
 
   public object Schema : SqlSchema<QueryResult.Value<Unit>> {
     override val version: Long
-      get() = 1
+      get() = 2
 
     override fun create(driver: SqlDriver): QueryResult.Value<Unit> {
       driver.execute(null, """
@@ -40,9 +40,25 @@ private class GameVaultDatabaseImpl(
           |    platforms TEXT NOT NULL DEFAULT '',
           |    genres TEXT NOT NULL DEFAULT '',
           |    shortScreenshots TEXT NOT NULL DEFAULT '',
-          |    isFavorite INTEGER NOT NULL DEFAULT 0
+          |    isFavorite INTEGER NOT NULL DEFAULT 0,
+          |    storeIds TEXT NOT NULL DEFAULT '',
+          |    source TEXT NOT NULL DEFAULT 'rawg'
           |)
           """.trimMargin(), 0)
+      return QueryResult.Unit
+    }
+
+    private fun migrateInternal(
+      driver: SqlDriver,
+      oldVersion: Long,
+      newVersion: Long,
+    ): QueryResult.Value<Unit> {
+      if (oldVersion <= 1 && newVersion > 1) {
+        driver.execute(null, "ALTER TABLE GameEntity ADD COLUMN storeIds TEXT NOT NULL DEFAULT ''",
+            0)
+        driver.execute(null,
+            "ALTER TABLE GameEntity ADD COLUMN source TEXT NOT NULL DEFAULT 'rawg'", 0)
+      }
       return QueryResult.Unit
     }
 
@@ -51,6 +67,21 @@ private class GameVaultDatabaseImpl(
       oldVersion: Long,
       newVersion: Long,
       vararg callbacks: AfterVersion,
-    ): QueryResult.Value<Unit> = QueryResult.Unit
+    ): QueryResult.Value<Unit> {
+      var lastVersion = oldVersion
+
+      callbacks.filter { it.afterVersion in oldVersion until newVersion }
+      .sortedBy { it.afterVersion }
+      .forEach { callback ->
+        migrateInternal(driver, oldVersion = lastVersion, newVersion = callback.afterVersion + 1)
+        callback.block(driver)
+        lastVersion = callback.afterVersion + 1
+      }
+
+      if (lastVersion < newVersion) {
+        migrateInternal(driver, lastVersion, newVersion)
+      }
+      return QueryResult.Unit
+    }
   }
 }

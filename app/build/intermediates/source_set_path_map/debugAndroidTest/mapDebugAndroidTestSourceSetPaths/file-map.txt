@@ -1,0 +1,4 @@
+com.gamevault.app.test.app-androidTest-0 C:\Users\nikit\AndroidStudioProjects\GameVaultFix\app\build\generated\res\resValues\androidTest\debug
+com.gamevault.app.test.app-mergeDebugAndroidTestResources-1 C:\Users\nikit\AndroidStudioProjects\GameVaultFix\app\build\intermediates\incremental\debugAndroidTest\mergeDebugAndroidTestResources\merged.dir
+com.gamevault.app.test.app-mergeDebugAndroidTestResources-2 C:\Users\nikit\AndroidStudioProjects\GameVaultFix\app\build\intermediates\incremental\debugAndroidTest\mergeDebugAndroidTestResources\stripped.dir
+com.gamevault.app.test.app-debugAndroidTest-3 C:\Users\nikit\AndroidStudioProjects\GameVaultFix\app\build\intermediates\merged_res\debugAndroidTest\mergeDebugAndroidTestResources

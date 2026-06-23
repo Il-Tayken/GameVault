@@ -17,4 +17,6 @@ public data class GameEntity(
   public val genres: String,
   public val shortScreenshots: String,
   public val isFavorite: Long,
+  public val storeIds: String,
+  public val source: String,
 )

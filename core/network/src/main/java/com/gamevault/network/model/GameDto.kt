@@ -29,7 +29,20 @@ data class GameDto(
     val platforms: List<PlatformWrapper>? = null,
     val genres: List<GenreDto>? = null,
     @SerialName("short_screenshots") val shortScreenshots: List<ScreenshotDto>? = null,
-    @SerialName("esrb_rating") val esrbRating: EsrbRatingDto? = null
+    @SerialName("esrb_rating") val esrbRating: EsrbRatingDto? = null,
+    val stores: List<StoreWrapper>? = null
+)
+
+@Serializable
+data class StoreWrapper(
+    val store: StoreDto
+)
+
+@Serializable
+data class StoreDto(
+    val id: Int = 0,
+    val name: String = "",
+    val slug: String = ""
 )
 
 @Serializable

@@ -12,7 +12,9 @@ data class Game(
     val platforms: List<String>,
     val genres: List<String>,
     val isFavorite: Boolean,
-    val esrbRating: String? = null   // e.g. "mature", "adults-only", "everyone"
+    val esrbRating: String? = null,
+    val storeIds: List<String> = emptyList(),
+    val source: String = "rawg"
 )
 
 enum class Platform(val displayName: String, val rawgId: String) {
@@ -24,4 +26,13 @@ enum class Platform(val displayName: String, val rawgId: String) {
     XBOX_SERIES("Xbox Series X", "186"),
     MOBILE("Mobile", "3,21"),
     NINTENDO("Nintendo Switch", "7")
+}
+
+// Store IDs in RAWG
+object StoreId {
+    const val STEAM = "1"
+    const val EPIC  = "11"
+    const val PS    = "3"
+    const val XBOX  = "2"
+    const val GOG   = "5"
 }

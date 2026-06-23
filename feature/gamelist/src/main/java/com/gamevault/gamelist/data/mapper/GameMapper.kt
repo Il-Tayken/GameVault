@@ -4,12 +4,12 @@ import com.gamevault.database.GameEntity
 import com.gamevault.gamelist.domain.model.Game
 import com.gamevault.network.model.GameDto
 
-fun GameDto.toEntity(): GameEntity {
+fun GameDto.toEntity(source: String = "rawg"): GameEntity {
     val dto = this
-    val screenshotsStr = buildString {
-        dto.esrbRating?.slug?.let { slug -> append("esrb:$slug|") }
-        append(dto.shortScreenshots?.joinToString(",") { screenshot -> screenshot.image } ?: "")
-    }
+    val esrbPrefix = dto.esrbRating?.slug?.let { "esrb:$it|" } ?: ""
+    val screenshotsStr = esrbPrefix + (dto.shortScreenshots?.joinToString(",") { it.image } ?: "")
+    val storeIdsStr = dto.stores?.joinToString(",") { it.store.id.toString() } ?: ""
+
     return GameEntity(
         id = dto.id.toLong(),
         name = dto.name,
@@ -22,12 +22,13 @@ fun GameDto.toEntity(): GameEntity {
         platforms = dto.platforms?.joinToString(",") { it.platform.name } ?: "",
         genres = dto.genres?.joinToString(",") { it.name } ?: "",
         shortScreenshots = screenshotsStr,
-        isFavorite = 0
+        isFavorite = 0,
+        storeIds = storeIdsStr,
+        source = source
     )
 }
 
 fun GameEntity.toDomain(): Game {
-    // Parse esrb from shortScreenshots prefix if present
     val esrb = if (this.shortScreenshots.startsWith("esrb:")) {
         this.shortScreenshots.substringAfter("esrb:").substringBefore("|")
     } else null
@@ -44,6 +45,8 @@ fun GameEntity.toDomain(): Game {
         platforms = if (this.platforms.isBlank()) emptyList() else this.platforms.split(","),
         genres = if (this.genres.isBlank()) emptyList() else this.genres.split(","),
         isFavorite = this.isFavorite == 1L,
-        esrbRating = esrb
+        esrbRating = esrb,
+        storeIds = if (this.storeIds.isBlank()) emptyList() else this.storeIds.split(","),
+        source = this.source
     )
 }

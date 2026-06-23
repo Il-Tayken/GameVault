@@ -14,7 +14,8 @@ interface RawgApiService {
         @Query("page") page: Int = 1,
         @Query("page_size") pageSize: Int = 40,
         @Query("ordering") ordering: String = "-rating",
-        @Query("platforms") platforms: String? = null
+        @Query("platforms") platforms: String? = null,
+        @Query("stores") stores: String? = null
     ): GamesResponse
 
     @GET("games")
@@ -62,22 +63,70 @@ interface RawgApiService {
         @Query("stores") stores: String = "$STEAM_STORE_ID,$EPIC_STORE_ID"
     ): GamesResponse
 
+    // Steam — топ по добавлениям
     @GET("games")
     suspend fun getTopSteam(
         @Query("key") apiKey: String = API_KEY,
-        @Query("page_size") pageSize: Int = 20,
+        @Query("page") page: Int = 1,
+        @Query("page_size") pageSize: Int = 40,
         @Query("ordering") ordering: String = "-added",
         @Query("platforms") platforms: String = PC_ID,
         @Query("stores") stores: String = STEAM_STORE_ID
     ): GamesResponse
 
+    // Steam — новинки
+    @GET("games")
+    suspend fun getNewSteam(
+        @Query("key") apiKey: String = API_KEY,
+        @Query("page_size") pageSize: Int = 40,
+        @Query("ordering") ordering: String = "-released",
+        @Query("dates") dates: String,
+        @Query("platforms") platforms: String = PC_ID,
+        @Query("stores") stores: String = STEAM_STORE_ID
+    ): GamesResponse
+
+    // Steam — высокий рейтинг
+    @GET("games")
+    suspend fun getBestSteam(
+        @Query("key") apiKey: String = API_KEY,
+        @Query("page_size") pageSize: Int = 40,
+        @Query("ordering") ordering: String = "-rating",
+        @Query("platforms") platforms: String = PC_ID,
+        @Query("stores") stores: String = STEAM_STORE_ID,
+        @Query("metacritic") metacritic: String = "70,100"
+    ): GamesResponse
+
+    // Epic Games — топ
     @GET("games")
     suspend fun getTopEpic(
         @Query("key") apiKey: String = API_KEY,
-        @Query("page_size") pageSize: Int = 20,
+        @Query("page") page: Int = 1,
+        @Query("page_size") pageSize: Int = 40,
         @Query("ordering") ordering: String = "-added",
         @Query("platforms") platforms: String = PC_ID,
         @Query("stores") stores: String = EPIC_STORE_ID
+    ): GamesResponse
+
+    // Epic Games — новинки
+    @GET("games")
+    suspend fun getNewEpic(
+        @Query("key") apiKey: String = API_KEY,
+        @Query("page_size") pageSize: Int = 40,
+        @Query("ordering") ordering: String = "-released",
+        @Query("dates") dates: String,
+        @Query("platforms") platforms: String = PC_ID,
+        @Query("stores") stores: String = EPIC_STORE_ID
+    ): GamesResponse
+
+    // Epic Games — высокий рейтинг
+    @GET("games")
+    suspend fun getBestEpic(
+        @Query("key") apiKey: String = API_KEY,
+        @Query("page_size") pageSize: Int = 40,
+        @Query("ordering") ordering: String = "-rating",
+        @Query("platforms") platforms: String = PC_ID,
+        @Query("stores") stores: String = EPIC_STORE_ID,
+        @Query("metacritic") metacritic: String = "70,100"
     ): GamesResponse
 
     @GET("games/{id}")
@@ -101,5 +150,6 @@ interface RawgApiService {
         const val EPIC_STORE_ID  = "11"
         const val PS_STORE_ID    = "3"
         const val XBOX_STORE_ID  = "2"
+        const val GOG_STORE_ID   = "5"
     }
 }

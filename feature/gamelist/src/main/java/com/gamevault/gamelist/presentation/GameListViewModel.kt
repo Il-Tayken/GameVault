@@ -14,6 +14,7 @@ import com.gamevault.common.AppStrings
 import com.gamevault.common.getStrings
 import com.gamevault.gamelist.domain.model.Game
 import com.gamevault.gamelist.domain.model.Platform
+import com.gamevault.gamelist.domain.model.StoreId
 import com.gamevault.gamelist.domain.usecase.GetGamesUseCase
 import com.gamevault.gamelist.domain.usecase.RefreshGamesUseCase
 import com.gamevault.gamelist.domain.usecase.ToggleFavoriteUseCase
@@ -26,14 +27,20 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 enum class DrawerSection { HOME, FAVOURITES, DISCOVER, SETTINGS, ABOUT }
+
 enum class SortOrder {
     RATING_DESC, RATING_ASC, NAME_ASC, RELEASE_DESC, METACRITIC_DESC, PLAYTIME_DESC,
     STORE_STEAM, STORE_EPIC, STORE_PS, STORE_XBOX
 }
 
+// Активная база данных
+enum class GameSource { ALL, RAWG, STEAM, EPIC }
+
 data class GameListUiState(
     val allGames: List<Game>           = emptyList(),
     val isLoading: Boolean             = false,
+    val isSteamLoading: Boolean        = false,
+    val isEpicLoading: Boolean         = false,
     val error: String?                 = null,
     val selectedPlatform: Platform     = Platform.ALL,
     val selectedGenre: String          = "",
@@ -46,41 +53,33 @@ data class GameListUiState(
     val prefs: AppPrefs                = AppPrefs(),
     val strings: AppStrings            = AppStrings.RU,
     val cacheSize: Int                 = 0,
-    val cacheClearedMessage: Boolean   = false
+    val activeSource: GameSource       = GameSource.ALL,
+    val steamCount: Int                = 0,
+    val epicCount: Int                 = 0
 ) {
     val displayGames: List<Game> get() {
-        var list = if (showFavouritesOnly) allGames.filter { it.isFavorite } else allGames
+        var list = when {
+            showFavouritesOnly -> allGames.filter { it.isFavorite }
+            activeSource == GameSource.STEAM -> allGames.filter { it.source == "steam" || StoreId.STEAM in it.storeIds }
+            activeSource == GameSource.EPIC  -> allGames.filter { it.source == "epic"  || StoreId.EPIC  in it.storeIds }
+            activeSource == GameSource.RAWG  -> allGames.filter { it.source == "rawg" }
+            else -> allGames
+        }
 
-        // Adult filter — three layers of filtering:
+        // Adult filter
         if (prefs.adultFilter) {
-            // 1. ESRB rating from RAWG (most accurate)
-            val adultEsrb = setOf("adults-only", "mature", "ao")
-            // 2. Keywords in game name
-            val adultNameKeywords = setOf(
+            val adultKeywords = setOf(
                 "porn","hentai","xxx","nsfw","eroge","erotic",
-                "nude","naked","lewd","ecchi","18+","mega porn",
-                "adult game","sex simulator","hentai game"
+                "nude","naked","lewd","ecchi","18+","sex simulator","mega porn"
             )
-            // 3. Adult genres
-            val adultGenres = setOf("adult","eroge","hentai","nsfw","adults only","erotic")
-
+            val adultEsrb = setOf("adults-only","ao")
             list = list.filter { game ->
-                // Block if ESRB says adults-only or mature (slug: "adults-only", "mature")
-                val esrbSlug = game.esrbRating?.lowercase() ?: ""
-                val blockedByEsrb = adultEsrb.any { esrbSlug.contains(it) }
-                if (blockedByEsrb) return@filter false
-
-                // Block by name keywords
+                val esrb = game.esrbRating?.lowercase() ?: ""
+                if (adultEsrb.any { esrb.contains(it) }) return@filter false
                 val nameLower = game.name.lowercase()
-                val blockedByName = adultNameKeywords.any { kw -> nameLower.contains(kw) }
-                if (blockedByName) return@filter false
-
-                // Block by genre
+                if (adultKeywords.any { nameLower.contains(it) }) return@filter false
                 val genresLower = game.genres.map { it.lowercase() }
-                val blockedByGenre = genresLower.any { g ->
-                    adultGenres.any { ag -> g.contains(ag) }
-                }
-                !blockedByGenre
+                genresLower.none { g -> setOf("adult","eroge","hentai","nsfw").any { g.contains(it) } }
             }
         }
 
@@ -101,20 +100,50 @@ data class GameListUiState(
             }
         }
 
+        // Platform filter (within source)
+        if (selectedPlatform != Platform.ALL) {
+            val ids = selectedPlatform.rawgId.split(",")
+            list = list.filter { game ->
+                game.platforms.any { p ->
+                    ids.any { id ->
+                        when (id) {
+                            "4"   -> p.contains("PC", true) || p.contains("Windows", true)
+                            "187" -> p.contains("PlayStation 5", true)
+                            "18"  -> p.contains("PlayStation 4", true)
+                            "1"   -> p.contains("Xbox One", true)
+                            "186" -> p.contains("Xbox Series", true)
+                            "7"   -> p.contains("Nintendo", true)
+                            "3","21" -> p.contains("Android", true) || p.contains("iOS", true) || p.contains("mobile", true)
+                            else  -> false
+                        }
+                    }
+                }
+            }
+        }
+
         // Sort
         list = when (sortOrder) {
             SortOrder.RATING_DESC    -> list.sortedByDescending { it.rating }
             SortOrder.RATING_ASC     -> list.sortedBy { it.rating }
-            SortOrder.NAME_ASC       -> list.sortedBy { it.name }
-            SortOrder.RELEASE_DESC   -> list.sortedByDescending { it.released ?: "" }
+            SortOrder.NAME_ASC       -> list.sortedBy { it.name.lowercase() }
+            SortOrder.RELEASE_DESC   -> list.sortedWith(compareByDescending<Game> { it.released ?: "" })
             SortOrder.METACRITIC_DESC-> list.sortedByDescending { it.metacritic ?: 0 }
             SortOrder.PLAYTIME_DESC  -> list.sortedByDescending { it.playtime }
-            SortOrder.STORE_STEAM    -> list.filter { it.platforms.any { p -> p.contains("PC", true) } }.sortedByDescending { it.rating }
-            SortOrder.STORE_EPIC     -> list.filter { it.platforms.any { p -> p.contains("PC", true) } }.sortedByDescending { it.metacritic ?: 0 }
-            SortOrder.STORE_PS       -> list.filter { it.platforms.any { p -> p.contains("PlayStation", true) || p.contains("PS", true) } }.sortedByDescending { it.rating }
-            SortOrder.STORE_XBOX     -> list.filter { it.platforms.any { p -> p.contains("Xbox", true) } }.sortedByDescending { it.rating }
+            SortOrder.STORE_STEAM    -> list
+                .filter { it.source == "steam" || StoreId.STEAM in it.storeIds || it.platforms.any { p -> p.contains("PC", true) } }
+                .sortedByDescending { it.rating }
+            SortOrder.STORE_EPIC     -> list
+                .filter { it.source == "epic" || StoreId.EPIC in it.storeIds || it.platforms.any { p -> p.contains("PC", true) } }
+                .sortedByDescending { it.metacritic ?: 0 }
+            SortOrder.STORE_PS       -> list
+                .filter { it.platforms.any { p -> p.contains("PlayStation", true) } }
+                .sortedByDescending { it.rating }
+            SortOrder.STORE_XBOX     -> list
+                .filter { it.platforms.any { p -> p.contains("Xbox", true) } }
+                .sortedByDescending { it.rating }
         }
 
+        // Favorites always float to top
         return list.sortedByDescending { it.isFavorite }
     }
 }
@@ -137,8 +166,9 @@ class GameListViewModel @Inject constructor(
         _searchQuery.debounce(300).onEach { q ->
             _uiState.update { it.copy(searchQuery = q) }
         }.launchIn(viewModelScope)
-        observeGames(Platform.ALL)
-        // Auto-refresh on start if enabled
+
+        observeAllGames()
+
         if (_uiState.value.prefs.autoRefresh) {
             refresh(Platform.ALL)
         }
@@ -148,21 +178,30 @@ class GameListViewModel @Inject constructor(
     fun onPlatformSelected(platform: Platform) {
         val allLabel = _uiState.value.strings.all
         _uiState.update { it.copy(selectedPlatform = platform, showFavouritesOnly = false, selectedGenre = allLabel) }
-        observeGames(platform)
-        refresh(platform)
     }
 
-    fun onGenreSelected(genre: String)  = _uiState.update { it.copy(selectedGenre = genre) }
-    fun onSortSelected(sort: SortOrder) = _uiState.update { it.copy(sortOrder = sort) }
-    fun onSearchQuery(q: String)        { _searchQuery.value = q }
-    fun onToggleFavorite(id: Int, fav: Boolean) = viewModelScope.launch {
-        toggleFavoriteUseCase(id, !fav)
-        // Send notification if enabled and adding to favorites
-        if (!fav && _uiState.value.prefs.notifications) {
-            val game = _uiState.value.allGames.find { it.id == id }
-            game?.let { sendFavoriteNotification(it.name) }
+    fun onSourceSelected(source: GameSource) {
+        _uiState.update { it.copy(activeSource = source, showFavouritesOnly = false) }
+        when (source) {
+            GameSource.STEAM -> refreshSteam()
+            GameSource.EPIC  -> refreshEpic()
+            else -> {}
         }
     }
+
+    fun onGenreSelected(genre: String)   = _uiState.update { it.copy(selectedGenre = genre) }
+    fun onSortSelected(sort: SortOrder)  = _uiState.update { it.copy(sortOrder = sort) }
+    fun onSearchQuery(q: String)         { _searchQuery.value = q }
+
+    fun onToggleFavorite(id: Int, fav: Boolean) = viewModelScope.launch {
+        toggleFavoriteUseCase(id, !fav)
+        if (!fav && _uiState.value.prefs.notifications) {
+            _uiState.value.allGames.find { it.id == id }?.let { game ->
+                sendFavoriteNotification(game.name)
+            }
+        }
+    }
+
     fun onToggleCompact() = _uiState.update { it.copy(prefs = it.prefs.copy(isCompact = !it.prefs.isCompact)) }
 
     fun onDrawerSectionSelected(section: DrawerSection) {
@@ -176,55 +215,56 @@ class GameListViewModel @Inject constructor(
     }
 
     fun onDismissAboutDialog() = _uiState.update { it.copy(showAboutDialog = false) }
-    fun onRefresh()            = refresh(_uiState.value.selectedPlatform)
 
-    // ── Clear cache ───────────────────────────────────────────────
+    fun onRefresh() {
+        refresh(_uiState.value.selectedPlatform)
+        refreshSteam()
+        refreshEpic()
+    }
+
     fun onClearCache() {
         viewModelScope.launch {
             repository.clearCache()
             loadCacheSize()
-            _uiState.update { it.copy(cacheClearedMessage = true) }
-            // Auto-refresh after clearing
             if (_uiState.value.prefs.autoRefresh) {
                 refresh(_uiState.value.selectedPlatform)
             }
         }
     }
 
-    // ── Apply prefs ───────────────────────────────────────────────
     fun onApplyPrefs(prefs: AppPrefs) {
         val strings = getStrings(prefs.language)
         val wasAutoRefresh = _uiState.value.prefs.autoRefresh
         _uiState.update { state ->
-            val oldAll   = state.strings.all
+            val oldAll = state.strings.all
             val newGenre = if (state.selectedGenre.isBlank() || state.selectedGenre == oldAll) strings.all else state.selectedGenre
             val rawGenres = state.availableGenres.filter { it != oldAll }
             state.copy(
-                prefs         = prefs,
-                strings       = strings,
+                prefs = prefs, strings = strings,
                 selectedGenre = newGenre,
                 availableGenres = listOf(strings.all) + rawGenres
             )
         }
-        // If auto-refresh just turned ON — refresh now
         if (!wasAutoRefresh && prefs.autoRefresh) {
             refresh(_uiState.value.selectedPlatform)
         }
-        // Request notification permission if turned ON (Android 13+)
-        if (prefs.notifications && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            requestNotificationPermissionIfNeeded()
-        }
     }
 
-    // ── Private ───────────────────────────────────────────────────
-    private fun observeGames(platform: Platform) {
-        val platformId = platform.rawgId.takeIf { it.isNotBlank() }
-        getGamesUseCase(platformId).onEach { games ->
-            val allLabel  = _uiState.value.strings.all
+    private fun observeAllGames() {
+        getGamesUseCase(null).onEach { games ->
+            val allLabel = _uiState.value.strings.all
             val rawGenres = games.flatMap { it.genres }.distinct().sorted()
+            val steamCount = games.count { it.source == "steam" || StoreId.STEAM in it.storeIds }
+            val epicCount = games.count { it.source == "epic" || StoreId.EPIC in it.storeIds }
             _uiState.update { state ->
                 val genre = if (state.selectedGenre.isBlank()) allLabel else state.selectedGenre
-                state.copy(allGames = games, availableGenres = listOf(allLabel) + rawGenres, selectedGenre = genre)
+                state.copy(
+                    allGames = games,
+                    availableGenres = listOf(allLabel) + rawGenres,
+                    selectedGenre = genre,
+                    steamCount = steamCount,
+                    epicCount = epicCount
+                )
             }
         }.launchIn(viewModelScope)
     }
@@ -246,6 +286,28 @@ class GameListViewModel @Inject constructor(
         }
     }
 
+    private fun refreshSteam() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isSteamLoading = true) }
+            try {
+                repository.refreshSteamGames()
+                loadCacheSize()
+            } catch (_: Exception) {}
+            finally { _uiState.update { it.copy(isSteamLoading = false) } }
+        }
+    }
+
+    private fun refreshEpic() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isEpicLoading = true) }
+            try {
+                repository.refreshEpicGames()
+                loadCacheSize()
+            } catch (_: Exception) {}
+            finally { _uiState.update { it.copy(isEpicLoading = false) } }
+        }
+    }
+
     private fun loadCacheSize() {
         viewModelScope.launch {
             val size = repository.getCacheSize()
@@ -263,16 +325,11 @@ class GameListViewModel @Inject constructor(
             val notification = NotificationCompat.Builder(context, "gamevault_main")
                 .setSmallIcon(android.R.drawable.star_on)
                 .setContentTitle("GameVault")
-                .setContentText("⭐ $gameName ${_uiState.value.strings.noFavs.replace("Нет избранных игр","").let { "добавлено в избранное" }}")
+                .setContentText("⭐ $gameName добавлено в избранное")
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .setAutoCancel(true)
                 .build()
             nm.notify(gameName.hashCode(), notification)
         } catch (_: Exception) {}
-    }
-
-    private fun requestNotificationPermissionIfNeeded() {
-        // Permission request is handled in MainActivity via Activity result API
-        // Here we just check — actual request is in UI layer
     }
 }

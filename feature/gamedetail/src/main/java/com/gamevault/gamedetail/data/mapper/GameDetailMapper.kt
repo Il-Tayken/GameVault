@@ -16,7 +16,9 @@ fun GameDetailDto.toEntity(isFavorite: Long = 0): GameEntity = GameEntity(
     platforms = this.platforms?.joinToString(",") { it.platform.name } ?: "",
     genres = this.genres?.joinToString(",") { it.name } ?: "",
     shortScreenshots = this.backgroundImageAdditional ?: "",
-    isFavorite = isFavorite
+    isFavorite = isFavorite,
+    storeIds = "",
+    source = "rawg"
 )
 
 fun GameEntity.toDetailDomain(): GameDetail = GameDetail(

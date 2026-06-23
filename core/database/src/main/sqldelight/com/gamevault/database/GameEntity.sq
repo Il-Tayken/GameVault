@@ -10,7 +10,9 @@ CREATE TABLE GameEntity (
     platforms TEXT NOT NULL DEFAULT '',
     genres TEXT NOT NULL DEFAULT '',
     shortScreenshots TEXT NOT NULL DEFAULT '',
-    isFavorite INTEGER NOT NULL DEFAULT 0
+    isFavorite INTEGER NOT NULL DEFAULT 0,
+    storeIds TEXT NOT NULL DEFAULT '',
+    source TEXT NOT NULL DEFAULT 'rawg'
 );
 
 selectAll:
@@ -19,14 +21,26 @@ SELECT * FROM GameEntity ORDER BY isFavorite DESC, rating DESC;
 selectByPlatform:
 SELECT * FROM GameEntity WHERE platforms LIKE '%' || :platform || '%' ORDER BY isFavorite DESC, rating DESC;
 
+selectByStore:
+SELECT * FROM GameEntity WHERE storeIds LIKE '%' || :storeId || '%' ORDER BY isFavorite DESC, rating DESC;
+
+selectBySource:
+SELECT * FROM GameEntity WHERE source = :source ORDER BY isFavorite DESC, rating DESC;
+
 selectById:
 SELECT * FROM GameEntity WHERE id = :id;
+
+selectFavorites:
+SELECT * FROM GameEntity WHERE isFavorite = 1 ORDER BY rating DESC;
 
 insert:
 INSERT OR REPLACE INTO GameEntity VALUES ?;
 
 updateFavorite:
 UPDATE GameEntity SET isFavorite = :isFavorite WHERE id = :id;
+
+deleteNonFavoritesBySource:
+DELETE FROM GameEntity WHERE source = :source AND isFavorite = 0;
 
 deleteAll:
 DELETE FROM GameEntity;
